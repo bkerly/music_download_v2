@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Downloader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+        
+        .input-section {
+            margin-bottom: 20px;
+        }
+        
+        .input-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .options input {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        
+        .options input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .jobs-section {
+            margin-top: 20px;
+        }
+        
+        .job {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+        
+        .job.completed {
+            border-left-color: #28a745;
+        }
+        
+        .job.failed {
+            border-left-color: #dc3545;
+        }
+        
+        .job.downloading {
+            border-left-color: #ffc107;
+        }
+        
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .job-type {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .job-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .job-status.queued { background: #e9ecef; color: #495057; }
+        .job-status.generating { background: #fff3cd; color: #856404; }
+        .job-status.downloading { background: #fff3cd; color: #856404; }
+        .job-status.completed { background: #d4edda; color: #155724; }
+        .job-status.completed_with_errors { background: #fff3cd; color: #856404; }
+        .job-status.failed { background: #f8d7da; color: #721c24; }
+        
+        .job-details {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .job-progress {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .examples {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .examples h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        
+        .examples ul {
+            list-style: none;
+        }
+        
+        .examples li {
+            padding: 8px 0;
+            color: #666;
+        }
+        
+        .examples code {
+            background: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #333;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Music Downloader</h1>
+            <p>Download music from YouTube, Spotify playlists, or generate from vibes</p>
+        </div>
+        
+        <div class="card">
+            <div class="input-section">
+                <label for="input">Paste URL, playlist text, search query, or describe a vibe:</label>
+                <textarea id="input" placeholder="Examples:
+• YouTube URL: https://youtube.com/watch?v=...
+• Spotify playlist text (copy from embed)
+• Search: Miles Davis - So What
+• Vibe: upbeat indie rock for summer road trips"></textarea>
+            </div>
+            
+            <div class="options">
+                <input type="text" id="playlistName" placeholder="Playlist name (optional)">
+                <input type="number" id="numTracks" placeholder="# tracks (for vibes)" min="10" max="100" value="30">
+            </div>
+            
+            <button id="submitBtn" onclick="submitDownload()">Download</button>
+            
+            <div id="alert" style="display: none;"></div>
+        </div>
+        
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">Recent Jobs</h2>
+            <div id="jobs"></div>
+        </div>
+        
+        <div class="examples">
+            <h3>💡 What you can do:</h3>
+            <ul>
+                <li>📺 <strong>YouTube URLs:</strong> <code>https://youtube.com/watch?v=...</code></li>
+                <li>🎧 <strong>Spotify Playlists:</strong> Copy/paste the track list from Spotify embed</li>
+                <li>🔍 <strong>Search:</strong> <code>Artist - Song Name</code></li>
+                <li>✨ <strong>Vibes:</strong> <code>chill lo-fi beats for studying</code> (requires Ollama)</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        let jobCheckInterval;
+        
+        function submitDownload() {
+            const input = document.getElementById('input').value.trim();
+            const playlistName = document.getElementById('playlistName').value.trim();
+            const numTracks = parseInt(document.getElementById('numTracks').value) || 30;
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (!input) {
+                showAlert('Please enter something to download', 'error');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            fetch('/api/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    input: input,
+                    playlist_name: playlistName,
+                    num_tracks: numTracks
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showAlert(data.error, 'error');
+                } else {
+                    showAlert(data.message, 'success');
+                    document.getElementById('input').value = '';
+                    startJobPolling();
+                }
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Download';
+            })
+            .catch(error => {
+                showAlert('Error: ' + error.message, 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Download';
+            });
+        }
+        
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.className = 'alert alert-' + type;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+        
+        function loadJobs() {
+            fetch('/api/jobs')
+                .then(response => response.json())
+                .then(jobs => {
+                    const jobsDiv = document.getElementById('jobs');
+                    
+                    if (jobs.length === 0) {
+                        jobsDiv.innerHTML = '<p style="color: #999; text-align: center;">No jobs yet</p>';
+                        return;
+                    }
+                    
+                    // Sort by created_at descending
+                    jobs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    
+                    jobsDiv.innerHTML = jobs.slice(0, 10).map(job => `
+                        <div class="job ${job.status}">
+                            <div class="job-header">
+                                <div class="job-type">${job.input_type}</div>
+                                <div class="job-status ${job.status}">${job.status}</div>
+                            </div>
+                            <div class="job-details">${truncate(job.input_value, 60)}</div>
+                            ${job.total_tracks > 0 ? `
+                                <div class="job-progress">
+                                    ${job.completed_tracks}/${job.total_tracks} completed
+                                    ${job.failed_tracks > 0 ? ` • ${job.failed_tracks} failed` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                });
+        }
+        
+        function truncate(str, length) {
+            return str.length > length ? str.substring(0, length) + '...' : str;
+        }
+        
+        function startJobPolling() {
+            if (jobCheckInterval) {
+                clearInterval(jobCheckInterval);
+            }
+            loadJobs();
+            jobCheckInterval = setInterval(loadJobs, 3000);
+        }
+        
+        // Load jobs on page load
+        loadJobs();
+        startJobPolling();
+    </script>
+</body>
+</html>

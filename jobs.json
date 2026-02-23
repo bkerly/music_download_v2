@@ -30,5 +30,50 @@
     "created_at": "2026-02-23T10:07:36.528818",
     "completed_at": "2026-02-23T10:07:36.573007",
     "failed_track_details": []
+  },
+  "388b1365-ec63-49dd-a74d-2ffb9590f6f8": {
+    "job_id": "388b1365-ec63-49dd-a74d-2ffb9590f6f8",
+    "input_type": "spotify_playlist",
+    "input_value": "https://open.spotify.com/playlist/6cdMsSQUDgjBB0vAOe1MxX",
+    "status": "failed",
+    "total_tracks": 0,
+    "completed_tracks": 0,
+    "failed_tracks": 0,
+    "error_messages": [
+      "Could not extract tracks from Spotify playlist",
+      "Make sure the playlist is public, or try a YouTube playlist instead"
+    ],
+    "output_directory": "downloads",
+    "created_at": "2026-02-23T10:28:27.394825",
+    "completed_at": "2026-02-23T10:28:27.957370",
+    "failed_track_details": []
+  },
+  "b7f82f28-6a76-4a35-84ee-bea593e1bbf0": {
+    "job_id": "b7f82f28-6a76-4a35-84ee-bea593e1bbf0",
+    "input_type": "pasted_playlist",
+    "input_value": "101 tracks",
+    "status": "downloading",
+    "total_tracks": 0,
+    "completed_tracks": 0,
+    "failed_tracks": 0,
+    "error_messages": [],
+    "output_directory": "",
+    "created_at": "2026-02-23T13:47:03.119875",
+    "completed_at": null,
+    "failed_track_details": []
+  },
+  "1ad1b8a4-3e7d-482d-a656-18338e7a3eda": {
+    "job_id": "1ad1b8a4-3e7d-482d-a656-18338e7a3eda",
+    "input_type": "search_query",
+    "input_value": "Whoo! Alright - Yeah...Uh Huh.",
+    "status": "downloading",
+    "total_tracks": 0,
+    "completed_tracks": 0,
+    "failed_tracks": 0,
+    "error_messages": [],
+    "output_directory": "",
+    "created_at": "2026-02-23T13:52:40.934506",
+    "completed_at": null,
+    "failed_track_details": []
   }
 }

@@ -1,6 +1,6 @@
 """
 YouTube download handler using yt-dlp directly (no Spotify API needed)
-Supports extracting Spotify playlist metadata without authentication
+Supports parsing pasted Spotify playlist text
 """
 import os
 import logging
@@ -37,122 +37,68 @@ class MusicDownloader:
         
         logger.info("MusicDownloader initialized successfully")
     
-    def _extract_spotify_id(self, url: str) -> Optional[str]:
-        """Extract Spotify ID from URL"""
-        # Spotify URLs: https://open.spotify.com/track/ID or /playlist/ID or /album/ID
-        match = re.search(r'spotify\.com/(track|playlist|album)/([a-zA-Z0-9]+)', url)
-        if match:
-            return match.group(2)
-        return None
-    
-    def _is_spotify_url(self, url: str) -> bool:
-        """Check if URL is a Spotify URL"""
-        return 'spotify.com' in url.lower()
-    
-    def _get_spotify_playlist_tracks(self, playlist_url: str) -> Optional[List[Dict[str, str]]]:
+    def parse_playlist_text(self, playlist_text: str) -> List[Dict[str, str]]:
         """
-        Extract track list from Spotify playlist using web scraping
-        No API credentials needed - uses public embed API
+        Parse pasted Spotify playlist text from embed view
+        
+        Expected format:
+        1. Song Title
+        Artist Name
+        03:28
+        
+        Returns list of {'artist': ..., 'title': ...}
         """
-        try:
-            # Extract playlist ID from URL
-            match = re.search(r'spotify\.com/playlist/([a-zA-Z0-9]+)', playlist_url)
-            if not match:
-                logger.error("Could not extract playlist ID from URL")
-                return None
+        tracks = []
+        lines = playlist_text.strip().split('\n')
+        
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
             
-            playlist_id = match.group(1)
+            # Skip empty lines
+            if not line:
+                i += 1
+                continue
             
-            # Use Spotify's public embed API (no auth required)
-            embed_url = f"https://open.spotify.com/embed/playlist/{playlist_id}"
+            # Look for numbered track entries (e.g., "1. Song Title")
+            # Remove track number if present
+            title_line = re.sub(r'^\d+\.\s*', '', line)
             
-            logger.info(f"Fetching Spotify playlist metadata for ID: {playlist_id}")
-            
-            # Get the embed page
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-            }
-            response = requests.get(embed_url, headers=headers)
-            
-            if response.status_code != 200:
-                logger.error(f"Failed to fetch playlist: HTTP {response.status_code}")
-                return None
-            
-            # Try to extract data from the page
-            # Spotify embeds have a data-uri attribute with track info
-            html = response.text
-            
-            # Look for the embedded data
-            # This is a simplified approach - we'll use yt-dlp's spotify extractor instead
-            # which can handle this better
-            
-            logger.info("Using yt-dlp to extract Spotify playlist metadata...")
-            
-            # yt-dlp can extract Spotify metadata without downloading
-            ydl_opts = {
-                'quiet': True,
-                'extract_flat': True,  # Don't download, just get metadata
-                'skip_download': True,
-            }
-            
-            tracks = []
-            
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                try:
-                    info = ydl.extract_info(playlist_url, download=False)
+            # Check if this could be a track title (not a time duration)
+            if not re.match(r'^\d{1,2}:\d{2}$', title_line):
+                # Next line should be artist (unless it's a duration)
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
                     
-                    if info and 'entries' in info:
-                        for entry in info['entries']:
-                            if entry:
-                                artist = entry.get('artist') or entry.get('uploader') or 'Unknown'
-                                title = entry.get('track') or entry.get('title') or 'Unknown'
-                                
-                                tracks.append({
-                                    'artist': artist,
-                                    'title': title
-                                })
+                    # Check if next line is artist (not a duration)
+                    if not re.match(r'^\d{1,2}:\d{2}$', next_line):
+                        artist = next_line
+                        title = title_line
                         
-                        logger.info(f"Extracted {len(tracks)} tracks from Spotify playlist")
-                        return tracks
-                    
-                except Exception as e:
-                    logger.warning(f"yt-dlp Spotify extraction failed: {e}")
-                    # Fall back to web scraping
-                    pass
+                        # Clean up common suffixes
+                        title = re.sub(r'\s*-\s*Remastered.*$', '', title, flags=re.IGNORECASE)
+                        
+                        tracks.append({
+                            'artist': artist,
+                            'title': title
+                        })
+                        
+                        # Skip to duration line or next track
+                        i += 2
+                        
+                        # Skip duration if present
+                        if i < len(lines) and re.match(r'^\d{1,2}:\d{2}$', lines[i].strip()):
+                            i += 1
+                        continue
             
-            # Fallback: try to parse from HTML
-            # Look for track data in script tags
-            import json
-            
-            # Find the embedded data
-            match = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.+?)</script>', html)
-            if match:
-                try:
-                    data = json.loads(match.group(1))
-                    
-                    # Navigate through the nested structure to find tracks
-                    # This structure may change, so it's fragile
-                    playlist_data = data.get('props', {}).get('pageProps', {}).get('state', {})
-                    
-                    # Try to find tracks in various possible locations
-                    # This is highly dependent on Spotify's current page structure
-                    logger.warning("HTML parsing method - structure may have changed")
-                    
-                except Exception as e:
-                    logger.error(f"Failed to parse Spotify embed data: {e}")
-            
-            logger.error("Could not extract tracks from Spotify playlist")
-            logger.info("Try using a public Spotify playlist or search for tracks manually")
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error fetching Spotify playlist: {e}", exc_info=True)
-            return None
+            i += 1
+        
+        logger.info(f"Parsed {len(tracks)} tracks from pasted text")
+        return tracks
     
     def download_url(self, url: str, custom_output: Optional[str] = None) -> Dict:
         """
-        Download from YouTube or Spotify URL
-        For Spotify playlists, extracts track list and searches YouTube for each
+        Download from YouTube URL
         """
         result = {
             'success': False,
@@ -165,32 +111,6 @@ class MusicDownloader:
         }
         
         try:
-            # Check if it's a Spotify playlist
-            if self._is_spotify_url(url) and '/playlist/' in url:
-                logger.info("Detected Spotify playlist - extracting tracks...")
-                
-                tracks = self._get_spotify_playlist_tracks(url)
-                
-                if not tracks:
-                    result['errors'].append("Could not extract tracks from Spotify playlist")
-                    result['errors'].append("Make sure the playlist is public, or try a YouTube playlist instead")
-                    return result
-                
-                # Extract playlist name from URL or use generic name
-                playlist_match = re.search(r'/playlist/([a-zA-Z0-9]+)', url)
-                playlist_name = f"spotify_playlist_{playlist_match.group(1)}" if playlist_match else "spotify_playlist"
-                
-                # Download tracks as a playlist
-                logger.info(f"Downloading {len(tracks)} tracks from Spotify playlist...")
-                return self.download_track_list(tracks, playlist_name)
-            
-            # Check if it's any other Spotify URL (track, album)
-            if self._is_spotify_url(url):
-                result['errors'].append("Spotify track/album URLs require API credentials (Premium account)")
-                result['errors'].append("Try searching for the track instead: 'Artist - Song Name'")
-                return result
-            
-            # For YouTube URLs, proceed normally
             # Set up yt-dlp options
             ydl_opts = self.ydl_opts_base.copy()
             
